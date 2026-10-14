@@ -146,7 +146,9 @@ body {
 }
 .model-bar.stuck { padding-top: 10px; border-bottom-color: var(--line); }
 .model-bar-in { max-width: 1072px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
-.playback { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+/* job and playback wrap together: on narrow screens they share the second row */
+.bar-rest { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.playback { display: flex; align-items: center; gap: 8px; }
 .btn-replay { display: inline-flex; align-items: center; gap: 6px; }
 .btn-replay svg { width: 16px; height: 16px; }
 .playback .seg button { font-size: 15px; padding: 6px 12px; }
@@ -446,5 +448,7 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .seg-model button { white-space: nowrap; }
 @media (max-width: 520px) {
   .seg-model .cost { display: none; }
-  .playback .btn, .playback .seg-sm button { font-size: 14px; padding: 6px 12px; }
+  .model-bar [data-task-toggle] button, .playback .seg button { font-size: 14px; padding: 6px 11px; }
+  .btn-replay { padding: 7px 10px; }
+  .btn-replay span { display: none; }
 }
