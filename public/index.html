@@ -58,10 +58,17 @@
     <span aria-hidden="true">e</span><span aria-hidden="true">f</span><span aria-hidden="true">f</span><span aria-hidden="true">o</span><span aria-hidden="true">r</span><span aria-hidden="true">t</span>
   </h1>
   <p class="lede">Same model. Same task.<br>How hard does it try?</p>
-  <div class="model-pick">
+</header>
+
+<!-- stays pinned to the top while scrolling, so the model can be switched from anywhere -->
+<div class="model-bar" id="model-bar">
+  <div class="model-bar-in">
     <div class="seg seg-model" role="radiogroup" aria-label="Model" id="model"></div>
-    <p class="model-note" id="model-note" aria-live="polite"></p>
   </div>
+</div>
+
+<div class="masthead masthead-rest">
+  <p class="model-note" id="model-note" aria-live="polite"></p>
   <ul class="legend" aria-label="What the colors mean">
     <li><i style="--c:var(--think)"></i>Think</li>
     <li><i style="--c:var(--look)"></i>Look</li>
@@ -70,7 +77,7 @@
     <li><i style="--c:var(--extra)"></i>Extra (not asked for)</li>
     <li><i style="--c:var(--wait)"></i>Waiting on you</li>
   </ul>
-</header>
+</div>
 
 <main>
   <section class="race" aria-labelledby="race-h">

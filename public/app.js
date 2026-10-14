@@ -990,6 +990,11 @@
   const syncDefaults = () => dialHost.querySelectorAll('button').forEach((b, i) => b.classList.toggle('is-default', isDefault(i)));
 
   const modelNote = document.getElementById('model-note');
+  // mark the model bar once it is pinned, so it gets a dividing line
+  const modelBar = document.getElementById('model-bar');
+  const pin = document.createElement('div');
+  modelBar.before(pin);
+  new IntersectionObserver(([e]) => modelBar.classList.toggle('stuck', !e.isIntersecting)).observe(pin);
   const showModel = () => {
     const M = MODELS[app.model];
     modelNote.textContent = M.note;
