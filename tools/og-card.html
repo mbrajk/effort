@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; }
+  body { background: #ecebf3; color: #211f38; font-family: "Bricolage Grotesque", sans-serif; font-optical-sizing: auto; position: relative; overflow: hidden; }
+  .wrap { position: absolute; left: 80px; top: 64px; }
+  h1 { font-size: 230px; line-height: .86; letter-spacing: -.045em; font-variation-settings: "opsz" 96; }
+  h1 span:nth-child(1) { font-weight: 200; } h1 span:nth-child(2) { font-weight: 320; } h1 span:nth-child(3) { font-weight: 440; }
+  h1 span:nth-child(4) { font-weight: 560; } h1 span:nth-child(5) { font-weight: 680; } h1 span:nth-child(6) { font-weight: 800; }
+  h1.plain { font-weight: 800; }
+  .lede { margin-top: 30px; font-size: 46px; line-height: 1.15; font-weight: 500; letter-spacing: -.01em; }
+  .levels { position: absolute; left: 80px; bottom: 60px; display: flex; gap: 14px; }
+  .lv { background: #f8f7fc; border: 2px solid #d7d4e6; border-radius: 16px; padding: 12px 18px 14px; width: 146px; }
+  .lv b { display: block; font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .meter { display: flex; gap: 5px; align-items: flex-end; height: 24px; margin-top: 10px; }
+  .meter i { width: 9px; border-radius: 3px; background: #d9d6e7; }
+  .meter i:nth-child(1){height:10px}.meter i:nth-child(2){height:14px}.meter i:nth-child(3){height:18px}.meter i:nth-child(4){height:21px}.meter i:nth-child(5){height:24px}
+  .robot { position: absolute; right: 80px; top: 96px; width: 300px; }
+  .site { position: absolute; right: 50px; top: 416px; width: 360px; text-align: center; font-size: 26px; font-weight: 600; color: #6a6683; }
+</style></head><body>
+<div class="wrap">
+  <h1 id="h"></h1>
+  <p class="lede" id="lede"></p>
+</div>
+<div class="levels" id="levels"></div>
+<svg class="robot" viewBox="0 0 64 64" aria-hidden="true">
+  <circle cx="32" cy="9" r="7" fill="#ffc94d" opacity=".35"/>
+  <line x1="32" y1="10" x2="32" y2="20" stroke="#6a5dcc" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="9" r="4" fill="#ffc94d"/>
+  <rect x="10" y="18" width="44" height="42" rx="18" fill="#8a7ee6"/>
+  <rect x="17" y="25" width="30" height="20" rx="9" fill="#100e25"/>
+  <rect x="23" y="30" width="5" height="10" rx="2.5" fill="#ffd66b"/>
+  <rect x="36" y="30" width="5" height="10" rx="2.5" fill="#ffd66b"/>
+</svg>
+<div class="site" id="site"></div>
+<script>
+  const q = new URLSearchParams(location.search), kind = q.get('k');
+  const lv = ['#2fae6a', '#8bbd3c', '#f2b52b', '#f08a3c', '#e4685a'];
+  const h = document.getElementById('h');
+  if (kind === 'learn') {
+    h.textContent = 'learn'; h.className = 'plain';
+    document.getElementById('lede').innerHTML = 'Short animated explainers<br>about working with AI.';
+    document.getElementById('site').textContent = 'learn.brajk.com';
+  } else {
+    h.innerHTML = [...'effort'].map(c => `<span>${c}</span>`).join('');
+    document.getElementById('lede').innerHTML = 'Same model. Same task.<br>How hard does it try?';
+    document.getElementById('site').textContent = 'learn.brajk.com/effort';
+    document.getElementById('levels').innerHTML = ['low', 'medium', 'high', 'xhigh', 'max'].map((n, i) =>
+      `<div class="lv"><b>${n}</b><div class="meter">${[0,1,2,3,4].map(j => `<i style="${j <= i ? 'background:' + lv[i] : ''}"></i>`).join('')}</div></div>`).join('');
+  }
+</script>
+</body></html>

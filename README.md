@@ -16,3 +16,7 @@ To add a lesson, create `public/<name>/` with its own `index.html`, using relati
 An animated explainer of AI effort levels. Same model, same task, five efforts, across Claude Fable 5.1, Opus 5.5 and Sonnet 5.5. Per-model differences (default level, thinking time, unrequested extras, check-ins) live in `MODELS` in `public/effort/app.js`.
 
 `window.effort.seekRace(t)` and `window.effort.seekClose(t)` in the console freeze an animation at time `t`, which helps when checking a single moment. `window.effort.model('sonnet-5.5')` switches model.
+
+## Link previews
+
+Each page sets `og:image` to a 1200×630 PNG (`public/og.png`, `public/effort/og.png`). They're rendered from `tools/og-card.html` (`?k=effort` or `?k=learn`) with headless Chrome at 1200×630. Slack caches previews per URL, so a changed image only shows on links it hasn't unfurled before.
