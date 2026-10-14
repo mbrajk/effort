@@ -145,7 +145,11 @@ body {
   transition: border-color .2s, padding .2s;
 }
 .model-bar.stuck { padding-top: 10px; border-bottom-color: var(--line); }
-.model-bar-in { max-width: 1120px; margin: 0 auto; }
+.model-bar-in { max-width: 1072px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.playback { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.btn-replay { display: inline-flex; align-items: center; gap: 6px; }
+.btn-replay svg { width: 16px; height: 16px; }
+.playback .seg button { font-size: 15px; padding: 6px 12px; }
 .seg-model button { font-size: 18px; padding: 10px 20px; }
 .model-note { margin: 0 0 0; color: var(--muted); font-weight: 500; font-size: 17px; max-width: 46ch; min-height: 3em; }
 .legend {
@@ -249,7 +253,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .result.ok { background: var(--check); transform: scale(1); opacity: 1; }
 .result.bad { background: var(--bad); transform: scale(1); opacity: 1; }
 .result.ok svg, .result.bad svg { opacity: 1; }
-.controls { display: flex; gap: 12px; align-items: center; margin-top: 16px; }
 
 /* ---------- phase strips ---------- */
 .strip { position: relative; height: 8px; }
@@ -438,7 +441,10 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
   .seg-model button { font-size: 15px; padding: 8px 12px; }
   .cell { padding: 4px; gap: 5px; }
   .cell .mark { width: 18px; height: 18px; }
-  main, .masthead, .foot { padding-left: 16px; padding-right: 16px; }
+  main, .masthead, .foot, .model-bar { padding-left: 16px; padding-right: 16px; }
 }
 .seg-model button { white-space: nowrap; }
-@media (max-width: 520px) { .seg-model .cost { display: none; } }
+@media (max-width: 520px) {
+  .seg-model .cost { display: none; }
+  .playback .btn, .playback .seg-sm button { font-size: 14px; padding: 6px 12px; }
+}

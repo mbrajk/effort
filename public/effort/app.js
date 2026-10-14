@@ -979,8 +979,11 @@
     close.playing = !close.playing;
     renderClose();
   });
-  document.getElementById('close-replay').addEventListener('click', () => { close.t = 0; close.playing = true; renderClose(); });
-  document.getElementById('race-replay').addEventListener('click', () => { race.t = 0; race.playing = true; renderRace(); });
+  // one replay for every animation on the page, pinned in the top bar
+  document.getElementById('replay').addEventListener('click', () => {
+    for (const a of [race, close]) { a.t = 0; a.playing = true; a.started = true; }
+    renderRace(); renderClose();
+  });
 
   // ---- lesson matrix ----
   function buildMatrix() {
@@ -1070,7 +1073,7 @@
     }, it => `<span class="mdot" style="--mc:var(--m-${it.value.split('-')[0]})" aria-hidden="true"></span>${it.label}${costHTML(it.cost)}`);
   showModel();
 
-  const speedSync = radioGroup(document.getElementById('race-speed'),
+  const speedSync = radioGroup(document.getElementById('speed'),
     [{ value: '1', label: '1×' }, { value: '2', label: '2×' }], '1',
     v => { app.speed = +v; speedSync(v); });
 
@@ -1107,7 +1110,7 @@
       renderRace();
     }
     if (close.playing && close.visible && !scrubbing) {
-      close.t += dt;
+      close.t += dt * app.speed;
       if (close.t >= close.end) { close.t = close.end; close.playing = false; }
       renderClose();
     }
