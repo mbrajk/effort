@@ -1,0 +1,12 @@
+{
+  // Static files only: no Worker code runs, so requests don't count against Workers limits.
+  "name": "effort",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public"
+  },
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "effort.brajk.com", "custom_domain": true }
+  ]
+}
