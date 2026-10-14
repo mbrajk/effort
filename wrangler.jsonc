@@ -1,5 +1,4 @@
 {
-  // Static files only: no Worker code runs, so requests don't count against Workers limits.
   "name": "learn",
   "compatibility_date": "2026-10-01",
   "assets": {

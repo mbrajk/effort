@@ -24,7 +24,6 @@
 </head>
 <body>
 
-<!-- Shared artwork: the picture, its three piece variants, and clip shapes -->
 <svg class="defs" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="gStage" x1="0" y1="0" x2="0" y2="1">
@@ -37,7 +36,6 @@
     <clipPath id="fc" clipPathUnits="userSpaceOnUse">
       <rect width="150" height="100"/>
     </clipPath>
-    <!-- 0: the real picture -->
     <g id="pic0">
       <rect width="150" height="100" fill="#a9d9f1"/>
       <circle cx="118" cy="26" r="13" fill="#ffd166"/>
@@ -45,13 +43,11 @@
       <path d="M0,60 C26,38 58,36 86,52 C108,64 128,52 150,44 V100 H0Z" fill="#7cc79f"/>
       <path d="M0,84 C34,66 70,68 100,80 C120,88 136,80 150,76 V100 H0Z" fill="#3f9a6e"/>
     </g>
-    <!-- 1: nearly right (hill is off by a little) -->
     <g id="pic1">
       <rect width="150" height="100" fill="#a9d9f1"/>
       <path d="M0,60 C26,38 58,36 86,52 C108,64 128,52 150,44 V100 H0Z" fill="#8fd6b0" transform="translate(0,-12)"/>
       <path d="M0,84 C34,66 70,68 100,80 C120,88 136,80 150,76 V100 H0Z" fill="#3f9a6e"/>
     </g>
-    <!-- 2: obviously wrong (different picture) -->
     <g id="pic2">
       <rect width="150" height="100" fill="#f4a9c4"/>
       <path d="M20,110 L130,0 M40,110 L150,0 M60,110 L170,0 M80,110 L190,0 M0,110 L110,0" stroke="#9a6dd6" stroke-width="5"/>
@@ -66,7 +62,6 @@
   <p class="lede">Same model. Same task.<br>How hard does it try?</p>
 </header>
 
-<!-- stays pinned to the top while scrolling, so the model can be switched from anywhere -->
 <div class="model-bar" id="model-bar">
   <div class="model-bar-in">
     <div class="seg seg-model" role="radiogroup" aria-label="Model" id="model"></div>

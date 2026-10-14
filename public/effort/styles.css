@@ -107,7 +107,6 @@ body {
 }
 .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-/* ---------- masthead ---------- */
 .masthead {
   max-width: 1120px;
   margin: 0 auto;
@@ -120,7 +119,6 @@ body {
   letter-spacing: -.045em;
   font-variation-settings: "opsz" 96;
 }
-/* each letter tries harder than the last */
 .wordmark span:nth-child(1) { font-weight: 200; }
 .wordmark span:nth-child(2) { font-weight: 320; }
 .wordmark span:nth-child(3) { font-weight: 440; }
@@ -146,7 +144,6 @@ body {
 }
 .model-bar.stuck { padding-top: 10px; border-bottom-color: var(--line); }
 .model-bar-in { max-width: 1072px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
-/* job and playback wrap together: on narrow screens they share the second row */
 .bar-rest { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .playback { display: flex; align-items: center; gap: 8px; }
 .btn-replay { display: inline-flex; align-items: center; gap: 6px; }
@@ -167,7 +164,6 @@ body {
 .legend li { display: flex; align-items: center; gap: 8px; }
 .legend i { width: 22px; height: 10px; border-radius: 5px; background: var(--c); }
 
-/* ---------- sections ---------- */
 main { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 section { padding: clamp(40px, 6vw, 72px) 0 0; }
 h2, .lede, .blurb, .kicker { text-wrap: balance; }
@@ -188,7 +184,6 @@ h2 {
 }
 .job { margin: 6px 0 0; color: var(--muted); font-size: 18px; }
 
-/* ---------- controls ---------- */
 .seg {
   display: inline-flex;
   padding: 4px;
@@ -215,7 +210,6 @@ h2 {
 .btn:hover { background: var(--dim); }
 button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 
-/* ---------- race ---------- */
 .lanes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .lane {
   display: grid;
@@ -256,7 +250,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .result.bad { background: var(--bad); transform: scale(1); opacity: 1; }
 .result.ok svg, .result.bad svg { opacity: 1; }
 
-/* ---------- phase strips ---------- */
 .strip { position: relative; height: 8px; }
 .strip-lg { height: 14px; margin-top: 16px; cursor: pointer; touch-action: none; }
 .strip .track, .strip .lit { position: absolute; inset: 0; }
@@ -271,7 +264,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 }
 .strip:not(.strip-lg) .head { display: none; }
 
-/* ---------- close-up ---------- */
 .dial { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .dial button {
   font: inherit;
@@ -306,7 +298,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .hud span { display: inline-flex; align-items: center; gap: 6px; }
 .hud svg { width: 18px; height: 18px; }
 
-/* ---------- lesson matrix ---------- */
 .matrix {
   margin-top: 24px;
   display: grid;
@@ -325,7 +316,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .cell.best { border-color: var(--ink); background: var(--surface); }
 .xtra { flex: none; display: inline-flex; gap: 2px; vertical-align: -3px; }
 .xtra svg { width: 16px; height: 16px; }
-/* ---------- pick for the job ---------- */
 .cost { margin-left: 6px; font-size: .78em; font-weight: 700; letter-spacing: -.02em; color: var(--cost); }
 .seg button[aria-checked="true"] .cost { color: var(--cost-on); }
 .pick-list { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 8px; max-width: 860px; }
@@ -356,7 +346,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .tip b { margin-right: 6px; }
 .note { margin: 20px 0 0; color: var(--muted); font-size: 16px; max-width: 62ch; }
 
-/* ---------- default effort tag ---------- */
 .def-tag {
   display: none;
   justify-self: start;
@@ -377,7 +366,6 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .foot { max-width: 1120px; margin: 0 auto; padding: 56px 24px 40px; color: var(--muted); font-size: 15px; }
 .foot a { color: inherit; }
 
-/* ---------- scene artwork (SVG classes) ---------- */
 .s-ground { fill: var(--ground); }
 .s-ground-edge { stroke: var(--ground-edge); stroke-width: 2; }
 .s-pad { fill: var(--pad); }

@@ -4,9 +4,6 @@
   const NS = 'http://www.w3.org/2000/svg';
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ---------------------------------------------------------------------------
-  // The world. Every scene shares this layout (SVG units, viewBox 1000 wide).
-  // ---------------------------------------------------------------------------
   const GROUND = 200;
   const START_X = 72;
   const CX = [250, 345, 440, 535, 630];          // crate centres
@@ -28,9 +25,6 @@
   const TEMPO = 0.8;                             // seconds per scripted "beat second"
   const WALK = 330;                              // walking speed, units per beat second
 
-  // ---------------------------------------------------------------------------
-  // Effort levels: the only thing that differs between agents.
-  // ---------------------------------------------------------------------------
   const LEVELS = [
     { id: 'low', think: 0.45, sketches: 0, strategy: 'grab', checks: [],
       blurb: 'Grabs the first piece. Never looks back.' },
@@ -50,18 +44,14 @@
   ];
   LEVELS.forEach((l, i) => { l.idx = i; });
 
-  // ---------------------------------------------------------------------------
-  // Models: the same five levels play out a little differently on each.
-  // Paraphrased from Anthropic's migration guidance for each model.
+  const NONE = [0, 0, 0, 0, 0];
+  // MODELS fields:
   //   def      the API's default effort level (index into LEVELS)
   //   think    thinking time multiplier per level
   //   extras   unrequested additions per level, by task ("does more than you asked")
   //   checkIn  levels that stop to ask before finishing, and on which tasks
-  //   eye      'sharp': tells right from nearly right at a glance, and even at low
-  //            looks at what it grabbed (needs less effort for the same job)
+  //   eye      'sharp': tells right from nearly right at a glance, and checks what it grabbed even at low
   //   deepFrom first level whose checks are thorough (later = needs more effort)
-  // ---------------------------------------------------------------------------
-  const NONE = [0, 0, 0, 0, 0];
   const MODELS = {
     'fable-5.1': {
       label: 'Fable 5.1', cost: 5, def: 2, eye: 'sharp', deepFrom: 2,
@@ -94,8 +84,7 @@
     hard:     { label: 'Hard',     m: [1, 2, 2, 0, 2] },
   };
 
-  // Stepping stones: a typical job and the pairing you'd reach for (judgment, not a benchmark).
-  //   lv  effort level index, or [from, to] for a range
+  // PICKS lv: effort level index, or [from, to] for a range
   const PICKS = [
     { job: 'Quick question, rename, small edit', model: 'sonnet-5.5', lv: 0,
       why: 'Cheap and fast. Extra effort buys nothing here.' },
@@ -115,9 +104,6 @@
       why: 'Slow and expensive, and it starts adding things you didn’t ask for.' },
   ];
 
-  // ---------------------------------------------------------------------------
-  // Planner: turns a level + task into a timeline of beats.
-  // ---------------------------------------------------------------------------
   function buildPlan(L, taskId, modelId) {
     const M = MODELS[modelId];
     const m = TASKS[taskId].m;
@@ -155,7 +141,6 @@
 
     let c;
     if (L.strategy === 'grab' && sharp) {
-      // a quick look at what it grabbed: enough to skip an obviously wrong piece
       for (let i = 0; i < 5; i++) {
         walk(STAND(i), 'look');
         add('open', 0.25, 'look', { c: i });
@@ -216,7 +201,6 @@
     add('done', 0.9, 'idle', { ok });
     add('stamp', 1.0, 'idle', { ok, c });
 
-    // merged phase segments for the timeline strips
     const segs = [];
     for (const b of beats) {
       const last = segs[segs.length - 1];
@@ -226,9 +210,6 @@
     return { level: L, task: taskId, model: modelId, m, beats, segs, total: t, ok, extras, checkIn };
   }
 
-  // ---------------------------------------------------------------------------
-  // State at time t: replay every beat that has started.
-  // ---------------------------------------------------------------------------
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, p) => a + (b - a) * p;
   const ease = p => p * p * (3 - 2 * p);
@@ -320,13 +301,10 @@
       S.pose = 'polish'; S.face = 1; S.expr = 'happy';
       S.sparkle = p;
     },
-    // turns to the user and waits for a go-ahead it didn't need
     checkin(S, b, p) {
       S.pose = S.held !== null ? 'carry' : 'idle'; S.face = -1; S.expr = 'curious';
       S.speech = { p };
     },
-    // adds something to the picture nobody asked for
-    // pulls out something new, carries it up and sticks it into the finished picture
     extra(S, b, p) {
       S.pose = p < 0.3 ? 'carry' : p < 0.75 ? 'place' : 'proud'; S.face = 1; S.expr = 'happy';
       S.added[b.k] = p;
@@ -362,9 +340,6 @@
     return S;
   }
 
-  // ---------------------------------------------------------------------------
-  // Scene: builds the SVG once, then moves things around every frame.
-  // ---------------------------------------------------------------------------
   function el(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
     if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
@@ -389,13 +364,11 @@
       svg.setAttribute('viewBox', '16 18 968 210');
       const root = el('g', null, svg);
 
-      // backdrop + ground
       el('rect', { x: 0, y: 0, width: 1000, height: GROUND, fill: 'url(#gStage)' }, root);
       el('rect', { x: 0, y: GROUND, width: 1000, height: 40, class: 's-ground' }, root);
       el('line', { x1: 0, x2: 1000, y1: GROUND, y2: GROUND, class: 's-ground-edge' }, root);
       el('ellipse', { cx: START_X, cy: GROUND + 4, rx: 32, ry: 5, class: 's-pad' }, root);
 
-      // easel + picture with a hole in it
       el('line', { x1: FX + FW / 2, y1: FY + FH, x2: FX + FW / 2 + 18, y2: GROUND, class: 's-leg' }, root);
       el('line', { x1: FX + 26, y1: FY + FH, x2: FX + 10, y2: GROUND, class: 's-leg' }, root);
       el('line', { x1: FX + FW - 26, y1: FY + FH, x2: FX + FW - 10, y2: GROUND, class: 's-leg' }, root);
@@ -404,7 +377,6 @@
       el('use', { href: '#pic0', 'clip-path': 'url(#fc)' }, pic);
       el('path', { d: PIECE, transform: `translate(${HOLE_X},${HOLE_Y})`, class: 's-hole' }, pic);
 
-      // crates
       this.crates = CX.map(cx => {
         const g = el('g', { transform: `translate(${cx - 26},${GROUND - 40})` }, root);
         const inside = el('rect', { x: 2, y: -3, width: 48, height: 6, rx: 2, class: 's-crate-in' }, g);
@@ -420,27 +392,21 @@
         return { g, inside, lid, q, mark, markBg, markGlyph, state: null };
       });
 
-      // the five pieces (what is in each crate is set per task)
       const piecesLayer = el('g', null, root);
 
-      // scan beam sits behind the agent
       this.beam = el('polygon', { class: 'scan-beam' }, root);
       this.scanLine = el('line', { class: 'scan-line' }, root);
       this.flaw = el('circle', { cx: HOLE_CX, cy: HOLE_CY, r: 30, class: 'flaw' }, root);
 
-      // agent
       this.agent = this.buildAgent(root);
       this.pieces = CX.map(() => makePiece(piecesLayer));
       root.appendChild(piecesLayer); // pieces render above the agent (held in front of it)
 
-      // thought bubble
       this.bubble = this.buildBubble(root);
 
-      // marks, stamp, sparkles
       this.mark = el('text', { class: 's-mark' }, root);
       this.sparkles = [[FX + 6, FY + 4, 1], [FX + FW - 10, FY + FH - 6, .8], [FX + FW * .55, FY - 12, .7], [FX - 14, FY + FH * .55, .6]].map(([x, y, s]) =>
         el('path', { d: 'M0,-9 L2.2,-2.2 L9,0 L2.2,2.2 L0,9 L-2.2,2.2 L-9,0 L-2.2,-2.2Z', class: 'sparkle', 'data-x': x, 'data-y': y, 'data-s': s }, root));
-      // unrequested additions: new things drawn into the picture, outlined as "not asked for"
       this.added = EXTRAS.map(x => {
         const g = el('g', null, root);
         const ring = el('rect', { x: x.box[0], y: x.box[1], width: x.box[2], height: x.box[3], rx: 5, class: 'x-ring' }, g);
@@ -449,7 +415,6 @@
         return { g, ring, x: FX + x.at[0], y: FY + x.at[1] };
       });
 
-      // check-in: the agent asks, the user answers
       this.speech = el('g', null, root);
       el('path', { d: 'M78,74 L96,74 L100,90 Z', class: 'sp-bubble' }, this.speech);
       el('rect', { x: 0, y: 36, width: 112, height: 40, rx: 14, class: 'sp-bubble' }, this.speech);
@@ -612,12 +577,10 @@
         this.glassAbs = { x: S.ax + (hx + dx * 11) * S.face, y: GROUND + bob + hy + dy * 11 };
       }
 
-      // antenna glow: brighter for more effort, pulsing while thinking
       const pulse = S.pose === 'think' ? 0.5 + 0.5 * Math.sin(t * 9) : 0;
       A.halo.style.opacity = Math.min(0.75, this.glowBase * (1 + pulse * 0.9)).toFixed(2);
       A.chest.style.fill = `var(--${S.phase})`;
 
-      // eyes
       const blink = ((t + this.seed * 1.7) % 3.6) < 0.12 && !['happy', 'oops'].includes(S.expr);
       const E = {
         neutral: [5, 9, 0, 0], curious: [5.5, 10, 2, -1.5], think: [5, 8, 2, -3], focus: [6, 5, 1.5, 0],
@@ -699,7 +662,6 @@
     }
 
     drawEffects(S, t) {
-      // ? / ! above the head
       show(this.mark, !!S.mark);
       if (S.mark) {
         this.mark.textContent = S.mark;
@@ -707,7 +669,6 @@
         this.mark.style.fill = S.mark === '!' ? 'var(--bad)' : 'var(--muted)';
       }
 
-      // unrequested additions: appear in the hand, arc into the picture, then get outlined
       this.added.forEach((a, k) => {
         const p = S.added[k];
         show(a.g, p > 0);
@@ -730,7 +691,6 @@
         }
       });
 
-      // check-in: a speech bubble, then (after a wait) the user's reply
       const sp = S.speech;
       show(this.speech, !!sp); show(this.reply, !!sp && sp.p > 0.62);
       if (sp) {
@@ -742,7 +702,6 @@
         set(this.reply, { transform: `translate(26,129) scale(${rp.toFixed(3)}) translate(-26,-129)` });
       }
 
-      // checking: a beam from the magnifier sweeping across the picture
       const sc = S.scan;
       show(this.beam, !!sc); show(this.scanLine, !!sc);
       if (sc && this.glassAbs) {
@@ -757,14 +716,12 @@
         this.scanLine.style.strokeDasharray = glance ? '4 5' : 'none';
       }
 
-      // a found flaw throbs red around the piece
       show(this.flaw, S.flaw > 0.01);
       if (S.flaw > 0.01) {
         this.flaw.style.opacity = (S.flaw * (0.65 + 0.35 * Math.sin(t * 14))).toFixed(2);
         set(this.flaw, { r: (28 + 4 * Math.sin(t * 14)).toFixed(1) });
       }
 
-      // polish sparkles (max only)
       this.sparkles.forEach((s, k) => {
         const local = clamp((S.sparkle - k * 0.18) / 0.4, 0, 1);
         const v = S.finished || S.beat === 'done' || S.beat === 'stamp' ? (S.sparkle > 0 ? 0.65 + 0.35 * Math.sin(t * 3 + k * 1.7) : 0) : Math.sin(Math.PI * local);
@@ -773,7 +730,6 @@
         set(s, { transform: `translate(${x},${y}) scale(${(base * v).toFixed(3)}) rotate(${(t * 40 + k * 20) % 360})` });
       });
 
-      // the verdict
       show(this.stamp, !!S.stamp);
       if (S.stamp) {
         const p = clamp((S.stamp.p - 0.15) / 0.5, 0, 1);
@@ -785,9 +741,6 @@
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Timeline strips: the same plan, drawn as coloured time.
-  // ---------------------------------------------------------------------------
   function buildStrip(host, plan, scale) {
     host.textContent = '';
     const track = document.createElement('div'); track.className = 'track';
@@ -815,9 +768,6 @@
     return strip;
   }
 
-  // ---------------------------------------------------------------------------
-  // Little HTML icons for counters
-  // ---------------------------------------------------------------------------
   const ICON = {
     look: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="var(--look)" stroke-width="2.4"/><path d="M12.7 12.7 17 17" stroke="var(--look)" stroke-width="2.6" stroke-linecap="round"/></svg>',
     check: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--check)" stroke-width="2.4"/><path d="M6 10.2 8.8 13 14 7.5" fill="none" stroke="var(--check)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -831,9 +781,6 @@
   const meterHTML = idx => `<span class="meter" aria-hidden="true" style="--lv:var(--lv${idx})">` +
     [0, 1, 2, 3, 4].map(i => `<b class="${i <= idx ? 'on' : ''}"></b>`).join('') + '</span>';
 
-  // ---------------------------------------------------------------------------
-  // App state + wiring
-  // ---------------------------------------------------------------------------
   const app = { model: 'opus-5.5', task: 'moderate', level: MODELS['opus-5.5'].def, speed: 1 };
   const plansFor = task => LEVELS.map(L => buildPlan(L, task, app.model));
   const isDefault = i => MODELS[app.model].def === i;
@@ -877,7 +824,6 @@
     return sync;
   }
 
-  // ---- race ----
   const lanesHost = document.getElementById('lanes');
   const lanes = LEVELS.map((L, i) => {
     const li = document.createElement('li');
@@ -928,7 +874,6 @@
     });
   }
 
-  // ---- close-up ----
   const stage = new Scene(document.getElementById('stage-svg'), 0.4);
   const closeStripHost = document.getElementById('close-strip');
   const hud = document.getElementById('close-hud');
@@ -959,7 +904,6 @@
     playBtn.textContent = close.playing ? 'Pause' : 'Play';
   }
 
-  // scrubbing on the big strip
   let scrubbing = false;
   const scrubTo = e => {
     const r = closeStripHost.getBoundingClientRect();
@@ -979,13 +923,11 @@
     close.playing = !close.playing;
     renderClose();
   });
-  // one replay for every animation on the page, pinned in the top bar
   document.getElementById('replay').addEventListener('click', () => {
     for (const a of [race, close]) { a.t = 0; a.playing = true; a.started = true; }
     renderRace(); renderClose();
   });
 
-  // ---- lesson matrix ----
   function buildMatrix() {
     const host = document.getElementById('matrix');
     const all = Object.keys(TASKS).map(k => plansFor(k));
@@ -1011,7 +953,6 @@
     });
   }
 
-  // ---- controls ----
   const taskItems = Object.entries(TASKS).map(([value, t]) => ({ value, label: t.label }));
   const taskSyncs = [];
   const pickTask = v => {
@@ -1033,7 +974,6 @@
 
   const modelNote = document.getElementById('model-note');
   const modelTip = document.getElementById('model-tip');
-  // mark the model bar once it is pinned, so it gets a dividing line
   const modelBar = document.getElementById('model-bar');
   const pin = document.createElement('div');
   modelBar.before(pin);
@@ -1081,7 +1021,6 @@
   setupClose();
   buildMatrix();
 
-  // start each animation when it scrolls into view; pause it when it leaves
   const io = new IntersectionObserver(entries => {
     for (const e of entries) {
       const target = e.target.id === 'lanes' ? race : close;
@@ -1091,14 +1030,6 @@
   }, { threshold: 0.3 });
   io.observe(lanesHost);
   io.observe(document.querySelector('.stage'));
-
-  // for inspecting a single moment from the console
-  window.effort = {
-    seekRace(t) { race.playing = false; race.t = t; renderRace(); },
-    seekClose(t) { close.playing = false; close.t = t; renderClose(); },
-    plans: () => lanes.map(l => ({ id: l.L.id, total: +l.plan.total.toFixed(2), ok: l.plan.ok, extras: l.plan.extras, checkIn: l.plan.checkIn })),
-    model(id) { document.querySelector(`#model [data-value="${id}"]`).click(); },
-  };
 
   let last = performance.now();
   function frame(now) {
