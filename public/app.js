@@ -1044,15 +1044,18 @@
     picksHost.querySelectorAll('.pick').forEach(li => li.classList.toggle('is-model', li.dataset.model === app.model));
   };
   const costHTML = n => `<span class="cost" aria-label="relative cost ${n} of 5">${'$'.repeat(n)}</span>`;
+  const dotHTML = '<span class="mdot" aria-hidden="true"></span>';
   const picksHost = document.getElementById('picks');
   picksHost.innerHTML = PICKS.map(pk => {
     const M = MODELS[pk.model];
     const [a, b] = Array.isArray(pk.lv) ? pk.lv : [pk.lv, pk.lv];
     const lvl = a === b ? LEVELS[a].id : `${LEVELS[a].id}–${LEVELS[b].id}`;
-    return `<li class="pick${pk.avoid ? ' avoid' : ''}" data-model="${pk.model}"><details><summary>
-      <span class="pick-job">${pk.avoid ? '<b>Avoid:</b> ' : ''}${pk.job}</span>
-      <span class="pick-tag">${M.label}${costHTML(M.cost)}<i></i><span class="lvl-sm">${lvl}</span>${meterHTML(b)}</span>
-    </summary><p class="pick-why">${pk.why}</p></details></li>`;
+    return `<li class="pick${pk.avoid ? ' avoid' : ''}" data-model="${pk.model}" style="--mc:var(--m-${pk.model.split('-')[0]})">
+      <div class="pick-head">
+        <span class="pick-job">${pk.avoid ? '<b>Avoid:</b> ' : ''}${pk.job}</span>
+        <span class="pick-tag">${dotHTML}${M.label}${costHTML(M.cost)}<i></i><span class="lvl-sm">${lvl}</span>${meterHTML(b)}</span>
+      </div>
+      <p class="pick-why">${pk.why}</p></li>`;
   }).join('');
   const modelSync = radioGroup(document.getElementById('model'),
     Object.entries(MODELS).map(([value, M]) => ({ value, label: M.label, cost: M.cost })), app.model,
@@ -1064,7 +1067,7 @@
       race.playing = !reduceMotion && race.visible; race.started = race.playing || race.started;
       close.playing = !reduceMotion && close.visible;
       renderRace(); renderClose();
-    }, it => `${it.label}${costHTML(it.cost)}`);
+    }, it => `<span class="mdot" style="--mc:var(--m-${it.value.split('-')[0]})" aria-hidden="true"></span>${it.label}${costHTML(it.cost)}`);
   showModel();
 
   const speedSync = radioGroup(document.getElementById('race-speed'),
