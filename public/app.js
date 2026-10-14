@@ -16,6 +16,15 @@
   const HOLE_CX = FX + HOLE_X + 17, HOLE_CY = FY + HOLE_Y + 17;
   const PLACE_X = 770, CHECK_X = 690;
   const PIECE = 'M0,0 H11 A7,7 0 1,1 23,0 H34 V11 A7,7 0 1,1 34,23 V34 H0 Z';
+  // Things the agent adds that nobody asked for, in picture coordinates (origin = item's anchor).
+  const EXTRAS = [
+    { at: [126, 57], box: [-13, -15, 26, 26], svg:
+      '<path d="M-8,-1 L0,-9 L8,-1 Z" fill="#d1495b"/><rect x="-6.5" y="-1.5" width="13" height="10" fill="#fff6e0"/><rect x="-2" y="3" width="4" height="5.5" fill="#8a5a3c"/>' },
+    { at: [82, 16], box: [-11, -9, 22, 15], svg:
+      '<path d="M-7,0 Q-3.5,-5 0,0 Q3.5,-5 7,0" fill="none" stroke="#2f3a4a" stroke-width="2" stroke-linecap="round"/>' },
+    { at: [22, 55], box: [-10, -16, 20, 26], svg:
+      '<rect x="-1.5" y="0" width="3" height="7" fill="#8a5a3c"/><circle cy="-5" r="7.5" fill="#2e7d4f"/>' },
+  ];
   const TEMPO = 0.8;                             // seconds per scripted "beat second"
   const WALK = 330;                              // walking speed, units per beat second
 
@@ -161,7 +170,7 @@
     if (L.polish) { walk(PLACE_X, 'check'); add('polish', L.polish, 'check'); }
     if (extras) {
       walk(PLACE_X, 'extra');
-      for (let k = 0; k < extras; k++) add('extra', 1.1, 'extra', { k });
+      for (let k = 0; k < extras; k++) add('extra', 1.4, 'extra', { k });
     }
 
     const ok = m[c] === 0;
@@ -278,8 +287,9 @@
       S.speech = { p };
     },
     // adds something to the picture nobody asked for
+    // pulls out something new, carries it up and sticks it into the finished picture
     extra(S, b, p) {
-      S.pose = 'polish'; S.face = 1; S.expr = 'happy'; S.mark = '+';
+      S.pose = p < 0.3 ? 'carry' : p < 0.75 ? 'place' : 'proud'; S.face = 1; S.expr = 'happy';
       S.added[b.k] = p;
       if (p >= 0.5) S.extras = b.k + 1;
     },
@@ -391,12 +401,13 @@
       this.mark = el('text', { class: 's-mark' }, root);
       this.sparkles = [[FX + 6, FY + 4, 1], [FX + FW - 10, FY + FH - 6, .8], [FX + FW * .55, FY - 12, .7], [FX - 14, FY + FH * .55, .6]].map(([x, y, s]) =>
         el('path', { d: 'M0,-9 L2.2,-2.2 L9,0 L2.2,2.2 L0,9 L-2.2,2.2 L-9,0 L-2.2,-2.2Z', class: 'sparkle', 'data-x': x, 'data-y': y, 'data-s': s }, root));
-      // unrequested additions, pinned around the frame
-      this.added = [[FX - 4, FY - 4, -12], [FX + FW * 0.4, FY - 6, 10], [FX + FW + 4, FY + FH + 4, -8]].map(([x, y, r]) => {
+      // unrequested additions: new things drawn into the picture, outlined as "not asked for"
+      this.added = EXTRAS.map(x => {
         const g = el('g', null, root);
-        el('circle', { r: 12, class: 'x-badge' }, g);
-        el('path', { d: 'M-5,0 H5 M0,-5 V5', class: 'stamp-glyph', 'stroke-width': 3 }, g);
-        return { g, x, y, r };
+        const ring = el('rect', { x: x.box[0], y: x.box[1], width: x.box[2], height: x.box[3], rx: 5, class: 'x-ring' }, g);
+        const art = el('g', { class: 'x-art' }, g);
+        art.innerHTML = x.svg;
+        return { g, ring, x: FX + x.at[0], y: FY + x.at[1] };
       });
 
       // check-in: the agent asks, the user answers
@@ -654,14 +665,30 @@
       if (S.mark) {
         this.mark.textContent = S.mark;
         set(this.mark, { x: S.ax.toFixed(1), y: GROUND - 92 - Math.sin(t * 6) * 2 });
-        this.mark.style.fill = S.mark === '!' ? 'var(--bad)' : S.mark === '+' ? 'var(--extra)' : 'var(--muted)';
+        this.mark.style.fill = S.mark === '!' ? 'var(--bad)' : 'var(--muted)';
       }
 
-      // unrequested additions pop on and stay
+      // unrequested additions: appear in the hand, arc into the picture, then get outlined
       this.added.forEach((a, k) => {
-        const p = clamp((S.added[k] - 0.3) / 0.45, 0, 1);
+        const p = S.added[k];
         show(a.g, p > 0);
-        if (p > 0) set(a.g, { transform: `translate(${a.x},${a.y}) rotate(${(a.r * (1 - p) * 2 + a.r).toFixed(1)}) scale(${Math.max(0.001, backOut(p)).toFixed(3)})` });
+        if (!(p > 0)) return;
+        const hand = { x: S.ax + 30 * S.face, y: GROUND - 50 };
+        let x, y, sc;
+        if (p < 0.3) { x = hand.x; y = hand.y; sc = 1.3 * backOut(clamp(p / 0.25, 0, 1)); }
+        else {
+          const k2 = ease(clamp((p - 0.3) / 0.42, 0, 1));
+          x = lerp(hand.x, a.x, k2); y = lerp(hand.y, a.y, k2) - 40 * Math.sin(Math.PI * k2); sc = lerp(1.3, 1, k2);
+        }
+        set(a.g, { transform: `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${Math.max(0.001, sc).toFixed(3)})` });
+        const rp = clamp((p - 0.72) / 0.2, 0, 1);
+        show(a.ring, rp > 0);
+        if (rp > 0) {
+          const pulse = p < 1 ? 1 + 0.25 * Math.sin(rp * Math.PI) : 1;
+          a.ring.style.opacity = (p < 1 ? rp : 0.85).toFixed(2);
+          a.ring.style.transformBox = 'fill-box'; a.ring.style.transformOrigin = 'center';
+          a.ring.style.transform = `scale(${pulse.toFixed(2)})`;
+        }
       });
 
       // check-in: a speech bubble, then (after a wait) the user's reply
@@ -756,11 +783,12 @@
     look: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="var(--look)" stroke-width="2.4"/><path d="M12.7 12.7 17 17" stroke="var(--look)" stroke-width="2.6" stroke-linecap="round"/></svg>',
     check: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--check)" stroke-width="2.4"/><path d="M6 10.2 8.8 13 14 7.5" fill="none" stroke="var(--check)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     fix: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 6.5A6.5 6.5 0 1 0 16.4 12" fill="none" stroke="var(--do)" stroke-width="2.4" stroke-linecap="round"/><path d="M16.5 2.5v4.6h-4.6" fill="none" stroke="var(--do)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    extra: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--extra)" stroke-width="2.4"/><path d="M6 10h8M10 6v8" stroke="var(--extra)" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    extra: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="none" stroke="var(--extra)" stroke-width="2" stroke-dasharray="3 2.2"/><path d="M5.5 10 10 5.5 14.5 10M7 9.5V14.5H13V9.5" fill="none" stroke="var(--extra)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>',
     think: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="3" width="16" height="10" rx="5" fill="none" stroke="var(--think)" stroke-width="2.2"/><circle cx="5" cy="16.5" r="1.8" fill="var(--think)"/></svg>',
     ok: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5 8.3 14 15.5 6.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     bad: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
   };
+  document.querySelectorAll('[data-extra-icon]').forEach(e => { e.innerHTML = ICON.extra; });
   const meterHTML = idx => '<span class="meter" aria-hidden="true">' +
     [0, 1, 2, 3, 4].map(i => `<b class="${i <= idx ? 'on' : ''}"></b>`).join('') + '</span>';
 
@@ -931,7 +959,7 @@
         const best = plans.findIndex(q => q.ok) === i;
         const cell = document.createElement('div');
         cell.className = 'cell' + (best ? ' best' : '');
-        const extra = p.extras ? `<span class="xtra" title="Extras nobody asked for">+${p.extras}</span>` : '';
+        const extra = p.extras ? `<span class="xtra" title="Extras nobody asked for">${ICON.extra.repeat(p.extras)}</span>` : '';
         cell.innerHTML = `<div class="strip"></div>${extra}<span class="mark ${p.ok ? 'ok' : 'bad'}">${ICON[p.ok ? 'ok' : 'bad']}</span>`;
         cell.setAttribute('aria-label', `${L.id} on ${TASKS[p.task].label.toLowerCase()} job: ${p.ok ? 'right' : 'wrong'}` +
           `${p.extras ? `, plus ${p.extras} unrequested` : ''}${p.checkIn ? ', stops to ask' : ''}${best ? ', the best pick' : ''}`);

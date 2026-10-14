@@ -298,10 +298,8 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .cell .mark.ok { background: var(--check); }
 .cell .mark.bad { background: var(--bad); }
 .cell.best { border-color: var(--ink); background: var(--surface); }
-.xtra {
-  flex: none; font-weight: 800; font-size: 13px; line-height: 1; padding: 4px 6px; border-radius: 99px;
-  color: #fff; background: var(--extra); font-variant-numeric: tabular-nums;
-}
+.xtra { flex: none; display: inline-flex; gap: 2px; vertical-align: -3px; }
+.xtra svg { width: 16px; height: 16px; }
 .note { margin: 20px 0 0; color: var(--muted); font-size: 16px; max-width: 62ch; }
 
 /* ---------- default effort tag ---------- */
@@ -363,7 +361,7 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .stamp-bad { fill: var(--bad); }
 .stamp-glyph { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
 .sparkle { fill: var(--bulb); }
-.x-badge { fill: var(--extra); stroke: var(--surface); stroke-width: 2.5; }
+.x-ring { fill: none; stroke: var(--extra); stroke-width: 2; stroke-dasharray: 4 3; }
 .sp-bubble { fill: var(--surface); stroke: var(--wait); stroke-width: 2; }
 .sp-patch { fill: var(--surface); }
 .sp-reply { fill: var(--wait); }
