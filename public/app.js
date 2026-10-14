@@ -57,27 +57,30 @@
   //   think    thinking time multiplier per level
   //   extras   unrequested additions per level, by task ("does more than you asked")
   //   checkIn  levels that stop to ask before finishing, and on which tasks
+  //   eye      'sharp': tells right from nearly right at a glance, and even at low
+  //            looks at what it grabbed (needs less effort for the same job)
+  //   deepFrom first level whose checks are thorough (later = needs more effort)
   // ---------------------------------------------------------------------------
   const NONE = [0, 0, 0, 0, 0];
   const MODELS = {
     'fable-5.1': {
-      label: 'Fable 5.1', def: 2,
+      label: 'Fable 5.1', def: 2, eye: 'sharp', deepFrom: 2,
       think: [1, 1, 1.1, 1.2, 1.3],
       extras: { easy: [0, 0, 1, 2, 3], tricky: [0, 0, 0, 1, 2], hard: NONE },
-      note: 'Default is high. At higher effort on routine jobs, it tends to do more than you asked.',
+      note: 'Default is high. The most capable: it gets the same job right with less effort. At higher effort on routine jobs, it tends to do more than you asked.',
     },
     'opus-5.5': {
-      label: 'Opus 5.5', def: 1,
+      label: 'Opus 5.5', def: 1, deepFrom: 2,
       think: [1, 1, 1, 1.25, 1.4],
       extras: { easy: [0, 0, 0, 1, 2], tricky: [0, 0, 0, 0, 1], hard: NONE },
       note: 'Default is medium. At xhigh and max, it thinks longer per turn than earlier Opus models.',
     },
     'sonnet-5.5': {
-      label: 'Sonnet 5.5', def: 2,
+      label: 'Sonnet 5.5', def: 2, deepFrom: 3,
       think: [0.35, 1, 1, 1, 1],
       extras: { easy: [0, 0, 0, 0, 1], tricky: NONE, hard: NONE },
       checkIn: { levels: [0], tasks: ['tricky', 'hard'] },
-      note: 'Default is high. At low, it skips thinking on simple jobs and may stop to check in before finishing.',
+      note: 'Default is high. Fast and cheaper, but hard jobs take a step more effort. At low, it skips thinking on simple jobs and may stop to check in before finishing.',
     },
   };
 
@@ -110,12 +113,13 @@
       add('walk', 0.12 + d / WALK, phase, { from: x, to });
       x = to;
     };
-    const scan = (from, careful) => {
+    const sharp = M.eye === 'sharp';
+    const scan = (from, careful, compare = L.compare) => {
       for (let i = from; i < 5; i++) {
         walk(STAND(i), 'look');
         add('open', 0.3, 'look', { c: i });
-        const ok = careful ? m[i] === 0 : m[i] < 2;
-        add('inspect', careful ? L.compare * 1.3 : L.compare, 'look', { c: i, ok });
+        const ok = careful || sharp ? m[i] === 0 : m[i] < 2;
+        add('inspect', careful ? compare * 1.3 : compare, 'look', { c: i, ok });
         if (ok) { add('pick', 0.45, 'do', { c: i, from: 'lifted' }); return i; }
         add('lower', 0.3, 'look', { c: i });
       }
@@ -126,7 +130,17 @@
     add('think', L.think * thinkK, 'think', { kind: 'plan', n: L.sketches });
 
     let c;
-    if (L.strategy === 'grab') {
+    if (L.strategy === 'grab' && sharp) {
+      // a quick look at what it grabbed: enough to skip an obviously wrong piece
+      for (let i = 0; i < 5; i++) {
+        walk(STAND(i), 'look');
+        add('open', 0.25, 'look', { c: i });
+        const ok = m[i] < 2;
+        add('inspect', 0.35, 'look', { c: i, ok });
+        if (ok) { add('pick', 0.35, 'do', { c: i, from: 'lifted' }); c = i; break; }
+        add('lower', 0.25, 'look', { c: i });
+      }
+    } else if (L.strategy === 'grab') {
       walk(STAND(0), 'look');
       add('open', 0.25, 'look', { c: 0 });
       add('pick', 0.35, 'do', { c: 0, from: 'open' });
@@ -151,7 +165,8 @@
     add('place', 0.7, 'do', { c });
 
     for (let k = 0, guard = 0; k < L.checks.length && guard < 8; k++, guard++) {
-      const ck = L.checks[k];
+      const ck = { ...L.checks[k] };
+      if (L.idx < M.deepFrom) ck.depth = 'glance';
       walk(CHECK_X, 'check');
       const detect = ck.depth === 'thorough' ? m[c] >= 1 : m[c] >= 2;
       add('check', ck.dur, 'check', { depth: ck.depth, detect, c });
