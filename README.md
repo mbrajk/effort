@@ -19,4 +19,4 @@ An animated explainer of AI effort levels. Same model, same task, five efforts, 
 
 ## Link previews
 
-Each page sets `og:image` to a 1200×630 PNG (`public/og.png`, `public/effort/og.png`). They're rendered from `tools/og-card.html` (`?k=effort` or `?k=learn`) with headless Chrome at 1200×630. Slack caches previews per URL, so a changed image only shows on links it hasn't unfurled before.
+Each page sets `og:image` to a 1200×630 PNG (`public/og.png`, `public/effort/og.png`). They're rendered from `tools/og-card.html` (`?k=effort` or `?k=learn`) with headless Chrome at 1200×630. Everything sits in the central 630×630 square, because Slack sometimes shows a square crop from the middle. Slack caches both the page preview and the image per URL: after changing a card, bump the `?v=` on the `og:image` URL, and share the page with a new query string (e.g. `?v=3`).
