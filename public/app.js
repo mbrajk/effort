@@ -64,21 +64,21 @@
   const NONE = [0, 0, 0, 0, 0];
   const MODELS = {
     'fable-5.1': {
-      label: 'Fable 5.1', def: 2, eye: 'sharp', deepFrom: 2,
+      label: 'Fable 5.1', cost: 5, def: 2, eye: 'sharp', deepFrom: 2,
       think: [1, 1, 1.1, 1.2, 1.3],
       extras: { easy: [0, 0, 1, 2, 3], tricky: [0, 0, 0, 1, 2], hard: NONE },
       note: 'Default is high. The most capable: the same job takes less effort. At higher effort, it tends to do more than you asked.',
       tip: 'Try low or medium for routine work. At low effort, it often beats older models at their highest.',
     },
     'opus-5.5': {
-      label: 'Opus 5.5', def: 1, deepFrom: 2,
+      label: 'Opus 5.5', cost: 2, def: 1, deepFrom: 2,
       think: [1, 1, 1, 1.25, 1.4],
       extras: { easy: [0, 0, 0, 1, 2], tricky: [0, 0, 0, 0, 1], hard: NONE },
       note: 'Default is medium. At xhigh and max, it thinks longer per turn than earlier Opus models.',
       tip: 'The everyday pick. Raise effort for hard jobs; max when getting it right matters more than cost.',
     },
     'sonnet-5.5': {
-      label: 'Sonnet 5.5', def: 2, deepFrom: 3,
+      label: 'Sonnet 5.5', cost: 1, def: 2, deepFrom: 3,
       think: [0.35, 1, 1, 1, 1],
       extras: { easy: [0, 0, 0, 0, 1], tricky: NONE, hard: NONE },
       checkIn: { levels: [0], tasks: ['tricky', 'hard'] },
@@ -93,6 +93,27 @@
     tricky: { label: 'Tricky', m: [2, 0, 2, 1, 2] },
     hard:   { label: 'Hard',   m: [1, 2, 2, 0, 2] },
   };
+
+  // Stepping stones: a typical job and the pairing you'd reach for (judgment, not a benchmark).
+  //   lv  effort level index, or [from, to] for a range
+  const PICKS = [
+    { job: 'Quick question, rename, small edit', model: 'sonnet-5.5', lv: 0,
+      why: 'Cheap and fast. Extra effort buys nothing here.' },
+    { job: 'Summarize a doc, draft a message', model: 'sonnet-5.5', lv: 1,
+      why: 'Reading and writing, not deep reasoning.' },
+    { job: 'Everyday feature or bug fix in familiar code', model: 'opus-5.5', lv: 1,
+      why: 'The default for a reason.' },
+    { job: 'Multi-step change across files, agent runs', model: 'opus-5.5', lv: 2,
+      why: 'Needs to plan, then check its own work.' },
+    { job: 'Tricky debugging, or a change that must be right', model: 'opus-5.5', lv: [3, 4],
+      why: 'Correctness matters more than cost.' },
+    { job: 'Ambiguous design, deep research, long autonomous work', model: 'fable-5.1', lv: 2,
+      why: 'Judgment and long-horizon reasoning are what you pay for.' },
+    { job: 'Opus at max keeps missing it', model: 'fable-5.1', lv: 1,
+      why: 'A smarter model at lower effort beats more effort on the same model.' },
+    { job: 'Routine work', model: 'fable-5.1', lv: 4, avoid: true,
+      why: 'Slow and expensive, and it starts adding things you didn’t ask for.' },
+  ];
 
   // ---------------------------------------------------------------------------
   // Planner: turns a level + task into a timeline of beats.
@@ -1020,9 +1041,21 @@
     modelTip.innerHTML = `<b>${M.label}</b> ${M.tip}`;
     document.querySelectorAll('[data-model-name]').forEach(e => { e.textContent = M.label; });
     syncDefaults();
+    picksHost.querySelectorAll('.pick').forEach(li => li.classList.toggle('is-model', li.dataset.model === app.model));
   };
+  const costHTML = n => `<span class="cost" aria-label="relative cost ${n} of 5">${'$'.repeat(n)}</span>`;
+  const picksHost = document.getElementById('picks');
+  picksHost.innerHTML = PICKS.map(pk => {
+    const M = MODELS[pk.model];
+    const [a, b] = Array.isArray(pk.lv) ? pk.lv : [pk.lv, pk.lv];
+    const lvl = a === b ? LEVELS[a].id : `${LEVELS[a].id}–${LEVELS[b].id}`;
+    return `<li class="pick${pk.avoid ? ' avoid' : ''}" data-model="${pk.model}"><details><summary>
+      <span class="pick-job">${pk.avoid ? '<b>Avoid:</b> ' : ''}${pk.job}</span>
+      <span class="pick-tag">${M.label}${costHTML(M.cost)}<i></i><span class="lvl-sm">${lvl}</span>${meterHTML(b)}</span>
+    </summary><p class="pick-why">${pk.why}</p></details></li>`;
+  }).join('');
   const modelSync = radioGroup(document.getElementById('model'),
-    Object.entries(MODELS).map(([value, M]) => ({ value, label: M.label })), app.model,
+    Object.entries(MODELS).map(([value, M]) => ({ value, label: M.label, cost: M.cost })), app.model,
     v => {
       app.model = v;
       app.level = MODELS[v].def;
@@ -1031,7 +1064,7 @@
       race.playing = !reduceMotion && race.visible; race.started = race.playing || race.started;
       close.playing = !reduceMotion && close.visible;
       renderRace(); renderClose();
-    });
+    }, it => `${it.label}${costHTML(it.cost)}`);
   showModel();
 
   const speedSync = radioGroup(document.getElementById('race-speed'),
