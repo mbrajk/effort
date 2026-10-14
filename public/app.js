@@ -37,9 +37,40 @@
     { id: 'max', think: 3.8, sketches: 4, strategy: 'survey', compare: 1.1, reconsider: 1.5,
       checks: [{ depth: 'thorough', dur: 1.3 }, { depth: 'thorough', dur: 1.1 }, { depth: 'thorough', dur: 1.0 }],
       polish: 1.3,
-      blurb: 'Everything, twice. Then it polishes.' },
+      blurb: 'Everything, twice, with a polish on top.' },
   ];
   LEVELS.forEach((l, i) => { l.idx = i; });
+
+  // ---------------------------------------------------------------------------
+  // Models: the same five levels play out a little differently on each.
+  // Paraphrased from Anthropic's migration guidance for each model.
+  //   def      the API's default effort level (index into LEVELS)
+  //   think    thinking time multiplier per level
+  //   extras   unrequested additions per level, by task ("does more than you asked")
+  //   checkIn  levels that stop to ask before finishing, and on which tasks
+  // ---------------------------------------------------------------------------
+  const NONE = [0, 0, 0, 0, 0];
+  const MODELS = {
+    'fable-5.1': {
+      label: 'Fable 5.1', def: 2,
+      think: [1, 1, 1.1, 1.2, 1.3],
+      extras: { easy: [0, 0, 1, 2, 3], tricky: [0, 0, 0, 1, 2], hard: NONE },
+      note: 'Default is high. At higher effort on routine jobs, it tends to do more than you asked.',
+    },
+    'opus-5.5': {
+      label: 'Opus 5.5', def: 1,
+      think: [1, 1, 1, 1.25, 1.4],
+      extras: { easy: [0, 0, 0, 1, 2], tricky: [0, 0, 0, 0, 1], hard: NONE },
+      note: 'Default is medium. At xhigh and max, it thinks longer per turn than earlier Opus models.',
+    },
+    'sonnet-5.5': {
+      label: 'Sonnet 5.5', def: 2,
+      think: [0.35, 1, 1, 1, 1],
+      extras: { easy: [0, 0, 0, 0, 1], tricky: NONE, hard: NONE },
+      checkIn: { levels: [0], tasks: ['tricky', 'hard'] },
+      note: 'Default is high. At low, it skips thinking on simple jobs and may stop to check in before finishing.',
+    },
+  };
 
   // What is in each crate: 0 = the right piece, 1 = nearly right, 2 = obviously wrong.
   const TASKS = {
@@ -51,8 +82,12 @@
   // ---------------------------------------------------------------------------
   // Planner: turns a level + task into a timeline of beats.
   // ---------------------------------------------------------------------------
-  function buildPlan(L, taskId) {
+  function buildPlan(L, taskId, modelId) {
+    const M = MODELS[modelId];
     const m = TASKS[taskId].m;
+    const thinkK = M.think[L.idx];
+    const extras = M.extras[taskId][L.idx];
+    const checkIn = !!M.checkIn && M.checkIn.levels.includes(L.idx) && M.checkIn.tasks.includes(taskId);
     const beats = [];
     let t = 0, x = START_X;
     const add = (type, dur, phase, d) => {
@@ -79,13 +114,14 @@
     };
 
     add('wake', 0.7, 'idle');
-    add('think', L.think, 'think', { kind: 'plan', n: L.sketches });
+    add('think', L.think * thinkK, 'think', { kind: 'plan', n: L.sketches });
 
     let c;
     if (L.strategy === 'grab') {
       walk(STAND(0), 'look');
       add('open', 0.25, 'look', { c: 0 });
       add('pick', 0.35, 'do', { c: 0, from: 'open' });
+      if (checkIn) add('checkin', 2.6, 'wait');
       c = 0;
     } else if (L.strategy === 'scan') {
       c = scan(0, false);
@@ -96,7 +132,7 @@
         add('inspect', L.compare, 'look', { c: i, ok: m[i] === 0 });
         add('lower', 0.3, 'look', { c: i });
       }
-      if (L.reconsider) add('think', L.reconsider, 'think', { kind: 'compare', marks: m.map(v => v === 0) });
+      if (L.reconsider) add('think', L.reconsider * thinkK, 'think', { kind: 'compare', marks: m.map(v => v === 0) });
       c = m.indexOf(0);
       walk(STAND(c), 'do');
       add('pick', 0.5, 'do', { c, from: 'closed' });
@@ -123,6 +159,10 @@
       }
     }
     if (L.polish) { walk(PLACE_X, 'check'); add('polish', L.polish, 'check'); }
+    if (extras) {
+      walk(PLACE_X, 'extra');
+      for (let k = 0; k < extras; k++) add('extra', 1.1, 'extra', { k });
+    }
 
     const ok = m[c] === 0;
     add('done', 0.9, 'idle', { ok });
@@ -135,7 +175,7 @@
       if (last && last.phase === b.phase) last.dur += b.dur;
       else segs.push({ phase: b.phase, t0: b.t0, dur: b.dur });
     }
-    return { level: L, task: taskId, m, beats, segs, total: t, ok };
+    return { level: L, task: taskId, model: modelId, m, beats, segs, total: t, ok, extras, checkIn };
   }
 
   // ---------------------------------------------------------------------------
@@ -152,8 +192,8 @@
       phase: 'idle', bubble: null, mag: false, scan: null, mark: null, flaw: 0,
       crates: [0, 1, 2, 3, 4].map(() => ({ lid: 0, mark: null })),
       pieces: [0, 1, 2, 3, 4].map(() => ({ mode: 'crate', p: 0 })),
-      held: null, placed: null, stamp: null, sparkle: 0,
-      looked: 0, checks: 0, fixes: 0, thought: 0, finished: false,
+      held: null, placed: null, stamp: null, sparkle: 0, speech: null, added: [0, 0, 0],
+      looked: 0, checks: 0, fixes: 0, extras: 0, thought: 0, finished: false,
     };
   }
 
@@ -232,6 +272,17 @@
       S.pose = 'polish'; S.face = 1; S.expr = 'happy';
       S.sparkle = p;
     },
+    // turns to the user and waits for a go-ahead it didn't need
+    checkin(S, b, p) {
+      S.pose = S.held !== null ? 'carry' : 'idle'; S.face = -1; S.expr = 'curious';
+      S.speech = { p };
+    },
+    // adds something to the picture nobody asked for
+    extra(S, b, p) {
+      S.pose = 'polish'; S.face = 1; S.expr = 'happy'; S.mark = '+';
+      S.added[b.k] = p;
+      if (p >= 0.5) S.extras = b.k + 1;
+    },
     done(S, b, p) {
       S.pose = 'celebrate'; S.expr = 'happy'; S.jump = p;
     },
@@ -250,7 +301,7 @@
       if (t < b.t0) break;
       const p = b.dur > 0 ? clamp((t - b.t0) / b.dur, 0, 1) : 1;
       // transient visuals belong to the current beat only
-      S.pose = 'idle'; S.expr = 'neutral'; S.bubble = null; S.mag = false; S.scan = null; S.mark = null; S.jump = 0;
+      S.pose = 'idle'; S.expr = 'neutral'; S.bubble = null; S.mag = false; S.scan = null; S.mark = null; S.jump = 0; S.speech = null;
       if (b.type !== 'check' && b.type !== 'alarm' && b.type !== 'remove') S.flaw = 0;
       APPLY[b.type](S, b, p);
       if (b.type === 'remove') fixes++;
@@ -340,6 +391,25 @@
       this.mark = el('text', { class: 's-mark' }, root);
       this.sparkles = [[FX + 6, FY + 4, 1], [FX + FW - 10, FY + FH - 6, .8], [FX + FW * .55, FY - 12, .7], [FX - 14, FY + FH * .55, .6]].map(([x, y, s]) =>
         el('path', { d: 'M0,-9 L2.2,-2.2 L9,0 L2.2,2.2 L0,9 L-2.2,2.2 L-9,0 L-2.2,-2.2Z', class: 'sparkle', 'data-x': x, 'data-y': y, 'data-s': s }, root));
+      // unrequested additions, pinned around the frame
+      this.added = [[FX - 4, FY - 4, -12], [FX + FW * 0.4, FY - 6, 10], [FX + FW + 4, FY + FH + 4, -8]].map(([x, y, r]) => {
+        const g = el('g', null, root);
+        el('circle', { r: 12, class: 'x-badge' }, g);
+        el('path', { d: 'M-5,0 H5 M0,-5 V5', class: 'stamp-glyph', 'stroke-width': 3 }, g);
+        return { g, x, y, r };
+      });
+
+      // check-in: the agent asks, the user answers
+      this.speech = el('g', null, root);
+      el('path', { d: 'M78,74 L96,74 L100,90 Z', class: 'sp-bubble' }, this.speech);
+      el('rect', { x: 0, y: 36, width: 112, height: 40, rx: 14, class: 'sp-bubble' }, this.speech);
+      el('rect', { x: 76, y: 70, width: 22, height: 8, class: 'sp-patch' }, this.speech);
+      el('text', { x: 56, y: 62, class: 'sp-text' }, this.speech).textContent = 'Shall I?';
+      this.reply = el('g', null, root);
+      el('rect', { x: 26, y: 112, width: 112, height: 34, rx: 12, class: 'sp-reply' }, this.reply);
+      const rt = el('text', { x: 82, y: 134, class: 'sp-text sp-reply-text' }, this.reply);
+      rt.textContent = 'Yes, go on';
+
       this.stamp = el('g', null, root);
       this.stampBg = el('circle', { r: 21 }, this.stamp);
       this.stampGlyph = el('path', { class: 'stamp-glyph' }, this.stamp);
@@ -584,7 +654,26 @@
       if (S.mark) {
         this.mark.textContent = S.mark;
         set(this.mark, { x: S.ax.toFixed(1), y: GROUND - 92 - Math.sin(t * 6) * 2 });
-        this.mark.style.fill = S.mark === '!' ? 'var(--bad)' : 'var(--muted)';
+        this.mark.style.fill = S.mark === '!' ? 'var(--bad)' : S.mark === '+' ? 'var(--extra)' : 'var(--muted)';
+      }
+
+      // unrequested additions pop on and stay
+      this.added.forEach((a, k) => {
+        const p = clamp((S.added[k] - 0.3) / 0.45, 0, 1);
+        show(a.g, p > 0);
+        if (p > 0) set(a.g, { transform: `translate(${a.x},${a.y}) rotate(${(a.r * (1 - p) * 2 + a.r).toFixed(1)}) scale(${Math.max(0.001, backOut(p)).toFixed(3)})` });
+      });
+
+      // check-in: a speech bubble, then (after a wait) the user's reply
+      const sp = S.speech;
+      show(this.speech, !!sp); show(this.reply, !!sp && sp.p > 0.62);
+      if (sp) {
+        const pop = Math.max(0.001, backOut(clamp(sp.p / 0.1, 0, 1)));
+        const bx = S.ax - 108;
+        set(this.speech, { transform: `translate(${bx.toFixed(1)},0) translate(100,90) scale(${pop.toFixed(3)}) translate(-100,-90)` });
+        this.speech.style.opacity = sp.p < 0.62 ? '1' : (1 - (sp.p - 0.62) / 0.38 * 0.5).toFixed(2);
+        const rp = Math.max(0.001, backOut(clamp((sp.p - 0.62) / 0.12, 0, 1)));
+        set(this.reply, { transform: `translate(26,129) scale(${rp.toFixed(3)}) translate(-26,-129)` });
       }
 
       // checking: a beam from the magnifier sweeping across the picture
@@ -667,6 +756,7 @@
     look: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="var(--look)" stroke-width="2.4"/><path d="M12.7 12.7 17 17" stroke="var(--look)" stroke-width="2.6" stroke-linecap="round"/></svg>',
     check: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--check)" stroke-width="2.4"/><path d="M6 10.2 8.8 13 14 7.5" fill="none" stroke="var(--check)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     fix: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 6.5A6.5 6.5 0 1 0 16.4 12" fill="none" stroke="var(--do)" stroke-width="2.4" stroke-linecap="round"/><path d="M16.5 2.5v4.6h-4.6" fill="none" stroke="var(--do)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    extra: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--extra)" stroke-width="2.4"/><path d="M6 10h8M10 6v8" stroke="var(--extra)" stroke-width="2.4" stroke-linecap="round"/></svg>',
     think: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="3" width="16" height="10" rx="5" fill="none" stroke="var(--think)" stroke-width="2.2"/><circle cx="5" cy="16.5" r="1.8" fill="var(--think)"/></svg>',
     ok: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5 8.3 14 15.5 6.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     bad: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
@@ -677,8 +767,17 @@
   // ---------------------------------------------------------------------------
   // App state + wiring
   // ---------------------------------------------------------------------------
-  const app = { task: 'tricky', level: 2, speed: 1 };
-  const plansFor = task => LEVELS.map(L => buildPlan(L, task));
+  const app = { model: 'opus-5.5', task: 'tricky', level: MODELS['opus-5.5'].def, speed: 1 };
+  const plansFor = task => LEVELS.map(L => buildPlan(L, task, app.model));
+  const isDefault = i => MODELS[app.model].def === i;
+  const DEF_TAG = '<span class="def-tag">default</span>';
+
+  function blurbFor(plan) {
+    let s = plan.level.blurb;
+    if (plan.checkIn) s += ' Then stops to ask before it finishes.';
+    if (plan.extras) s += plan.extras === 1 ? ' Adds something you didn’t ask for.' : ` Adds ${plan.extras} things you didn’t ask for.`;
+    return s;
+  }
   const scaleFor = plans => Math.max(...plans.map(p => p.total));
 
   function radioGroup(host, items, current, onPick, render) {
@@ -717,16 +816,16 @@
     const li = document.createElement('li');
     li.className = 'lane';
     li.innerHTML = `
-      <div class="lane-label"><span class="lvl">${L.id}</span>${meterHTML(i)}</div>
+      <div class="lane-label"><span class="lvl">${L.id}</span>${meterHTML(i)}${DEF_TAG}</div>
       <div class="lane-main"><svg class="scene" role="img" aria-label="${L.id} effort"></svg><div class="strip"></div></div>
       <div class="lane-hud">
-        <div class="stats"><span title="Crates looked in">${ICON.look}<em>0</em></span><span title="Checks">${ICON.check}<em>0</em></span></div>
+        <div class="stats"><span title="Crates looked in">${ICON.look}<em>0</em></span><span title="Checks">${ICON.check}<em>0</em></span><span title="Extras nobody asked for">${ICON.extra}<em>0</em></span></div>
         <div class="result" aria-live="polite"></div>
       </div>`;
     lanesHost.appendChild(li);
     const scene = new Scene(li.querySelector('svg'), i * 1.3);
-    const [looked, checks] = li.querySelectorAll('.stats em');
-    return { L, li, scene, stripHost: li.querySelector('.strip'), looked, checks, result: li.querySelector('.result'), plan: null, strip: null };
+    const [looked, checks, extras] = li.querySelectorAll('.stats em');
+    return { L, li, scene, stripHost: li.querySelector('.strip'), looked, checks, extras, result: li.querySelector('.result'), plan: null, strip: null };
   });
 
   const race = { t: 0, playing: false, started: false, end: 0, visible: false };
@@ -735,6 +834,7 @@
     const plans = plansFor(app.task);
     const scale = scaleFor(plans);
     lanes.forEach((ln, i) => {
+      ln.li.classList.toggle('is-default', isDefault(i));
       ln.plan = plans[i];
       ln.scene.setPlan(plans[i]);
       ln.strip = buildStrip(ln.stripHost, plans[i], scale);
@@ -750,6 +850,7 @@
       ln.strip.update(race.t);
       ln.looked.textContent = S.looked;
       ln.checks.textContent = S.checks;
+      ln.extras.textContent = S.extras;
       const key = S.stamp && S.stamp.p > 0.3 ? (S.stamp.ok ? 'ok' : 'bad') : '';
       if (key !== ln.resultKey) {
         ln.resultKey = key;
@@ -767,8 +868,8 @@
   const blurb = document.getElementById('blurb');
   const playBtn = document.getElementById('close-play');
   const close = { t: 0, playing: false, plan: null, strip: null, end: 0, visible: false, started: false };
-  hud.innerHTML = `<span title="Thinking">${ICON.think}<em>0.0s</em></span><span title="Crates looked in">${ICON.look}<em>0</em></span><span title="Checks">${ICON.check}<em>0</em></span><span title="Fixes">${ICON.fix}<em>0</em></span>`;
-  const [hThink, hLook, hCheck, hFix] = hud.querySelectorAll('em');
+  hud.innerHTML = `<span title="Thinking">${ICON.think}<em>0.0s</em></span><span title="Crates looked in">${ICON.look}<em>0</em></span><span title="Checks">${ICON.check}<em>0</em></span><span title="Fixes">${ICON.fix}<em>0</em></span><span title="Extras nobody asked for">${ICON.extra}<em>0</em></span>`;
+  const [hThink, hLook, hCheck, hFix, hExtra] = hud.querySelectorAll('em');
 
   function setupClose() {
     const plans = plansFor(app.task);
@@ -777,7 +878,7 @@
     close.strip = buildStrip(closeStripHost, close.plan, scaleFor(plans));
     close.end = close.plan.total + 0.6;
     close.t = 0;
-    blurb.textContent = LEVELS[app.level].blurb;
+    blurb.textContent = blurbFor(close.plan);
     renderClose();
   }
   function renderClose() {
@@ -787,6 +888,7 @@
     hLook.textContent = S.looked;
     hCheck.textContent = S.checks;
     hFix.textContent = S.fixes;
+    hExtra.textContent = S.extras;
     playBtn.textContent = close.playing ? 'Pause' : 'Play';
   }
 
@@ -822,15 +924,17 @@
     LEVELS.forEach((L, i) => {
       const rh = document.createElement('div');
       rh.className = 'rowh';
-      rh.textContent = L.id;
+      rh.innerHTML = L.id + (isDefault(i) ? DEF_TAG : '');
       host.appendChild(rh);
       all.forEach(plans => {
         const p = plans[i];
         const best = plans.findIndex(q => q.ok) === i;
         const cell = document.createElement('div');
         cell.className = 'cell' + (best ? ' best' : '');
-        cell.innerHTML = `<div class="strip"></div><span class="mark ${p.ok ? 'ok' : 'bad'}">${ICON[p.ok ? 'ok' : 'bad']}</span>`;
-        cell.setAttribute('aria-label', `${L.id} on ${TASKS[p.task].label.toLowerCase()} job: ${p.ok ? 'right' : 'wrong'}${best ? ', the best pick' : ''}`);
+        const extra = p.extras ? `<span class="xtra" title="Extras nobody asked for">+${p.extras}</span>` : '';
+        cell.innerHTML = `<div class="strip"></div>${extra}<span class="mark ${p.ok ? 'ok' : 'bad'}">${ICON[p.ok ? 'ok' : 'bad']}</span>`;
+        cell.setAttribute('aria-label', `${L.id} on ${TASKS[p.task].label.toLowerCase()} job: ${p.ok ? 'right' : 'wrong'}` +
+          `${p.extras ? `, plus ${p.extras} unrequested` : ''}${p.checkIn ? ', stops to ask' : ''}${best ? ', the best pick' : ''}`);
         host.appendChild(cell);
         buildStrip(cell.querySelector('.strip'), p, scale).update(p.total);
       });
@@ -850,10 +954,32 @@
   };
   document.querySelectorAll('[data-task-toggle]').forEach(h => taskSyncs.push(radioGroup(h, taskItems, app.task, pickTask)));
 
-  const dialSync = radioGroup(document.getElementById('dial'),
+  const dialHost = document.getElementById('dial');
+  const dialSync = radioGroup(dialHost,
     LEVELS.map((L, i) => ({ value: String(i), label: L.id })), String(app.level),
     v => { app.level = +v; dialSync(v); setupClose(); close.playing = true; renderClose(); },
-    it => `<span class="lvl">${it.label}</span>${meterHTML(+it.value)}`);
+    it => `<span class="lvl">${it.label}</span>${meterHTML(+it.value)}${DEF_TAG}`);
+  const syncDefaults = () => dialHost.querySelectorAll('button').forEach((b, i) => b.classList.toggle('is-default', isDefault(i)));
+
+  const modelNote = document.getElementById('model-note');
+  const showModel = () => {
+    const M = MODELS[app.model];
+    modelNote.textContent = M.note;
+    document.querySelectorAll('[data-model-name]').forEach(e => { e.textContent = M.label; });
+    syncDefaults();
+  };
+  const modelSync = radioGroup(document.getElementById('model'),
+    Object.entries(MODELS).map(([value, M]) => ({ value, label: M.label })), app.model,
+    v => {
+      app.model = v;
+      app.level = MODELS[v].def;
+      modelSync(v); dialSync(String(app.level)); showModel();
+      setupRace(); setupClose(); buildMatrix();
+      race.playing = !reduceMotion && race.visible; race.started = race.playing || race.started;
+      close.playing = !reduceMotion && close.visible;
+      renderRace(); renderClose();
+    });
+  showModel();
 
   const speedSync = radioGroup(document.getElementById('race-speed'),
     [{ value: '1', label: '1×' }, { value: '2', label: '2×' }], '1',
@@ -878,7 +1004,8 @@
   window.effort = {
     seekRace(t) { race.playing = false; race.t = t; renderRace(); },
     seekClose(t) { close.playing = false; close.t = t; renderClose(); },
-    plans: () => lanes.map(l => ({ id: l.L.id, total: +l.plan.total.toFixed(2), ok: l.plan.ok })),
+    plans: () => lanes.map(l => ({ id: l.L.id, total: +l.plan.total.toFixed(2), ok: l.plan.ok, extras: l.plan.extras, checkIn: l.plan.checkIn })),
+    model(id) { document.querySelector(`#model [data-value="${id}"]`).click(); },
   };
 
   let last = performance.now();

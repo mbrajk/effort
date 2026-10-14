@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Effort Levels</title>
-<meta name="description" content="Same AI agent, same task, five effort levels. Watch what changes.">
+<meta name="description" content="Same model, same task, five effort levels. Watch what changes, and how it differs across Claude models.">
 <meta property="og:title" content="Effort Levels">
 <meta property="og:description" content="Same agent. Same task. How hard does it try?">
 <meta property="og:type" content="website">
@@ -57,12 +57,18 @@
   <h1 class="wordmark" aria-label="effort">
     <span aria-hidden="true">e</span><span aria-hidden="true">f</span><span aria-hidden="true">f</span><span aria-hidden="true">o</span><span aria-hidden="true">r</span><span aria-hidden="true">t</span>
   </h1>
-  <p class="lede">Same agent. Same task.<br>How hard does it try?</p>
+  <p class="lede">Same model. Same task.<br>How hard does it try?</p>
+  <div class="model-pick">
+    <div class="seg seg-model" role="radiogroup" aria-label="Model" id="model"></div>
+    <p class="model-note" id="model-note" aria-live="polite"></p>
+  </div>
   <ul class="legend" aria-label="What the colors mean">
     <li><i style="--c:var(--think)"></i>Think</li>
     <li><i style="--c:var(--look)"></i>Look</li>
     <li><i style="--c:var(--do)"></i>Do</li>
     <li><i style="--c:var(--check)"></i>Check</li>
+    <li><i style="--c:var(--extra)"></i>Extra (not asked for)</li>
+    <li><i style="--c:var(--wait)"></i>Waiting on you</li>
   </ul>
 </header>
 
@@ -70,7 +76,7 @@
   <section class="race" aria-labelledby="race-h">
     <div class="bar">
       <div>
-        <h2 id="race-h">One job, five efforts</h2>
+        <h2 id="race-h"><span data-model-name>Opus 5.5</span>, five efforts</h2>
         <p class="job">Find the piece that finishes the picture.</p>
       </div>
       <div class="seg" role="radiogroup" aria-label="How hard is the job" data-task-toggle></div>
@@ -103,11 +109,13 @@
   <section class="lesson" aria-labelledby="lesson-h">
     <h2 id="lesson-h">Pick the lowest effort that gets it right</h2>
     <div class="matrix" id="matrix"></div>
+    <p class="note">Outlined: the lowest effort that gets it right. Tagged: <span data-model-name>Opus 5.5</span>’s default.
+      On easy jobs, extra effort doesn’t just take longer. It can add things nobody asked for (<span class="xtra">+n</span>).</p>
     <p class="kicker">Effort isn’t how smart it is.<br>It’s how hard it tries.</p>
   </section>
 </main>
 
-<footer class="foot">An illustration, not a benchmark. Real tasks vary.</footer>
+<footer class="foot">An illustration, not a benchmark. Model differences paraphrase Anthropic’s guidance for each model. Real tasks vary.</footer>
 
 <script src="app.js"></script>
 </body>
