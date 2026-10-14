@@ -67,20 +67,23 @@
       label: 'Fable 5.1', def: 2, eye: 'sharp', deepFrom: 2,
       think: [1, 1, 1.1, 1.2, 1.3],
       extras: { easy: [0, 0, 1, 2, 3], tricky: [0, 0, 0, 1, 2], hard: NONE },
-      note: 'Default is high. The most capable: it gets the same job right with less effort. At higher effort on routine jobs, it tends to do more than you asked.',
+      note: 'Default is high. The most capable: the same job takes less effort. At higher effort, it tends to do more than you asked.',
+      tip: 'Try low or medium for routine work. At low effort, it often beats older models at their highest.',
     },
     'opus-5.5': {
       label: 'Opus 5.5', def: 1, deepFrom: 2,
       think: [1, 1, 1, 1.25, 1.4],
       extras: { easy: [0, 0, 0, 1, 2], tricky: [0, 0, 0, 0, 1], hard: NONE },
       note: 'Default is medium. At xhigh and max, it thinks longer per turn than earlier Opus models.',
+      tip: 'The everyday pick. Raise effort for hard jobs; max when getting it right matters more than cost.',
     },
     'sonnet-5.5': {
       label: 'Sonnet 5.5', def: 2, deepFrom: 3,
       think: [0.35, 1, 1, 1, 1],
       extras: { easy: [0, 0, 0, 0, 1], tricky: NONE, hard: NONE },
       checkIn: { levels: [0], tasks: ['tricky', 'hard'] },
-      note: 'Default is high. Fast and cheaper, but hard jobs take a step more effort. At low, it skips thinking on simple jobs and may stop to check in before finishing.',
+      note: 'Default is high. Faster and cheaper, but hard jobs take a step more effort. At low, it may stop to check in before finishing.',
+      tip: 'Start at medium for multi-step work, low for quick questions.',
     },
   };
 
@@ -1005,6 +1008,7 @@
   const syncDefaults = () => dialHost.querySelectorAll('button').forEach((b, i) => b.classList.toggle('is-default', isDefault(i)));
 
   const modelNote = document.getElementById('model-note');
+  const modelTip = document.getElementById('model-tip');
   // mark the model bar once it is pinned, so it gets a dividing line
   const modelBar = document.getElementById('model-bar');
   const pin = document.createElement('div');
@@ -1013,6 +1017,7 @@
   const showModel = () => {
     const M = MODELS[app.model];
     modelNote.textContent = M.note;
+    modelTip.innerHTML = `<b>${M.label}</b> ${M.tip}`;
     document.querySelectorAll('[data-model-name]').forEach(e => { e.textContent = M.label; });
     syncDefaults();
   };
