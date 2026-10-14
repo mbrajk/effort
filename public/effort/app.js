@@ -66,22 +66,22 @@
     'fable-5.1': {
       label: 'Fable 5.1', cost: 5, def: 2, eye: 'sharp', deepFrom: 2,
       think: [1, 1, 1.1, 1.2, 1.3],
-      extras: { easy: [0, 0, 1, 2, 3], tricky: [0, 0, 0, 1, 2], hard: NONE },
+      extras: { easy: [0, 0, 1, 2, 3], moderate: [0, 0, 0, 1, 2], hard: NONE },
       note: 'Default is high. The most capable: the same job takes less effort. At higher effort, it tends to do more than you asked.',
       tip: 'Try low or medium for routine work. At low effort, it often beats older models at their highest.',
     },
     'opus-5.5': {
       label: 'Opus 5.5', cost: 2, def: 1, deepFrom: 2,
       think: [1, 1, 1, 1.25, 1.4],
-      extras: { easy: [0, 0, 0, 1, 2], tricky: [0, 0, 0, 0, 1], hard: NONE },
+      extras: { easy: [0, 0, 0, 1, 2], moderate: [0, 0, 0, 0, 1], hard: NONE },
       note: 'Default is medium. At xhigh and max, it thinks longer per turn than earlier Opus models.',
       tip: 'The everyday pick. Raise effort for hard jobs; max when getting it right matters more than cost.',
     },
     'sonnet-5.5': {
       label: 'Sonnet 5.5', cost: 1, def: 2, deepFrom: 3,
       think: [0.35, 1, 1, 1, 1],
-      extras: { easy: [0, 0, 0, 0, 1], tricky: NONE, hard: NONE },
-      checkIn: { levels: [0], tasks: ['tricky', 'hard'] },
+      extras: { easy: [0, 0, 0, 0, 1], moderate: NONE, hard: NONE },
+      checkIn: { levels: [0], tasks: ['moderate', 'hard'] },
       note: 'Default is high. Faster and cheaper, but hard jobs take a step more effort. At low, it may stop to check in before finishing.',
       tip: 'Start at medium for multi-step work, low for quick questions.',
     },
@@ -89,9 +89,9 @@
 
   // What is in each crate: 0 = the right piece, 1 = nearly right, 2 = obviously wrong.
   const TASKS = {
-    easy:   { label: 'Easy',   m: [0, 2, 2, 2, 2] },
-    tricky: { label: 'Tricky', m: [2, 0, 2, 1, 2] },
-    hard:   { label: 'Hard',   m: [1, 2, 2, 0, 2] },
+    easy:     { label: 'Easy',     m: [0, 2, 2, 2, 2] },
+    moderate: { label: 'Moderate', m: [2, 0, 2, 1, 2] },
+    hard:     { label: 'Hard',     m: [1, 2, 2, 0, 2] },
   };
 
   // Stepping stones: a typical job and the pairing you'd reach for (judgment, not a benchmark).
@@ -834,7 +834,7 @@
   // ---------------------------------------------------------------------------
   // App state + wiring
   // ---------------------------------------------------------------------------
-  const app = { model: 'opus-5.5', task: 'tricky', level: MODELS['opus-5.5'].def, speed: 1 };
+  const app = { model: 'opus-5.5', task: 'moderate', level: MODELS['opus-5.5'].def, speed: 1 };
   const plansFor = task => LEVELS.map(L => buildPlan(L, task, app.model));
   const isDefault = i => MODELS[app.model].def === i;
   const DEF_TAG = '<span class="def-tag">default</span>';

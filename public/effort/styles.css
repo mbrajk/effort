@@ -452,3 +452,9 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
   .btn-replay { padding: 7px 10px; }
   .btn-replay span { display: none; }
 }
+@media (max-width: 380px) {
+  .model-bar-in, .bar-rest, .playback { gap: 6px; }
+  .model-bar [data-task-toggle] button, .playback .seg button { padding: 6px 7px; }
+  .seg-model button { font-size: 14px; padding: 8px 9px; }
+  .seg-model .mdot { margin-right: 5px; }
+}
