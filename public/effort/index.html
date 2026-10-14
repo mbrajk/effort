@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Effort Levels</title>
+<meta name="description" content="Same model, same task, five effort levels. Watch what changes, and how it differs across Claude models.">
+<meta property="og:title" content="Effort Levels">
+<meta property="og:description" content="Same agent. Same task. How hard does it try?">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#ecebf3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16152a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Shared artwork: the picture, its three piece variants, and clip shapes -->
+<svg class="defs" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gStage" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--stage-top)"/>
+      <stop offset="1" style="stop-color:var(--stage-bot)"/>
+    </linearGradient>
+    <clipPath id="pc" clipPathUnits="userSpaceOnUse">
+      <path d="M0,0 H11 A7,7 0 1,1 23,0 H34 V11 A7,7 0 1,1 34,23 V34 H0 Z"/>
+    </clipPath>
+    <clipPath id="fc" clipPathUnits="userSpaceOnUse">
+      <rect width="150" height="100"/>
+    </clipPath>
+    <!-- 0: the real picture -->
+    <g id="pic0">
+      <rect width="150" height="100" fill="#a9d9f1"/>
+      <circle cx="118" cy="26" r="13" fill="#ffd166"/>
+      <ellipse cx="36" cy="20" rx="15" ry="5" fill="#fff" opacity=".85"/>
+      <path d="M0,60 C26,38 58,36 86,52 C108,64 128,52 150,44 V100 H0Z" fill="#7cc79f"/>
+      <path d="M0,84 C34,66 70,68 100,80 C120,88 136,80 150,76 V100 H0Z" fill="#3f9a6e"/>
+    </g>
+    <!-- 1: nearly right (hill is off by a little) -->
+    <g id="pic1">
+      <rect width="150" height="100" fill="#a9d9f1"/>
+      <path d="M0,60 C26,38 58,36 86,52 C108,64 128,52 150,44 V100 H0Z" fill="#8fd6b0" transform="translate(0,-12)"/>
+      <path d="M0,84 C34,66 70,68 100,80 C120,88 136,80 150,76 V100 H0Z" fill="#3f9a6e"/>
+    </g>
+    <!-- 2: obviously wrong (different picture) -->
+    <g id="pic2">
+      <rect width="150" height="100" fill="#f4a9c4"/>
+      <path d="M20,110 L130,0 M40,110 L150,0 M60,110 L170,0 M80,110 L190,0 M0,110 L110,0" stroke="#9a6dd6" stroke-width="5"/>
+    </g>
+  </defs>
+</svg>
+
+<header class="masthead">
+  <h1 class="wordmark" aria-label="effort">
+    <span aria-hidden="true">e</span><span aria-hidden="true">f</span><span aria-hidden="true">f</span><span aria-hidden="true">o</span><span aria-hidden="true">r</span><span aria-hidden="true">t</span>
+  </h1>
+  <p class="lede">Same model. Same task.<br>How hard does it try?</p>
+</header>
+
+<!-- stays pinned to the top while scrolling, so the model can be switched from anywhere -->
+<div class="model-bar" id="model-bar">
+  <div class="model-bar-in">
+    <div class="seg seg-model" role="radiogroup" aria-label="Model" id="model"></div>
+  </div>
+</div>
+
+<div class="masthead masthead-rest">
+  <p class="model-note" id="model-note" aria-live="polite"></p>
+  <ul class="legend" aria-label="What the colors mean">
+    <li><i style="--c:var(--think)"></i>Think</li>
+    <li><i style="--c:var(--look)"></i>Look</li>
+    <li><i style="--c:var(--do)"></i>Do</li>
+    <li><i style="--c:var(--check)"></i>Check</li>
+    <li><i style="--c:var(--extra)"></i>Extra (not asked for)</li>
+    <li><i style="--c:var(--wait)"></i>Waiting on you</li>
+  </ul>
+</div>
+
+<main>
+  <section class="race" aria-labelledby="race-h">
+    <div class="bar">
+      <div>
+        <h2 id="race-h"><span data-model-name>Opus 5.5</span>, five efforts</h2>
+        <p class="job">Find the piece that finishes the picture.</p>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="How hard is the job" data-task-toggle></div>
+    </div>
+    <ol class="lanes" id="lanes"></ol>
+    <div class="controls">
+      <button class="btn" type="button" id="race-replay">Replay</button>
+      <div class="seg seg-sm" role="radiogroup" aria-label="Playback speed" id="race-speed"></div>
+    </div>
+  </section>
+
+  <section class="close" aria-labelledby="close-h">
+    <div class="bar">
+      <h2 id="close-h">Up close</h2>
+      <div class="seg" role="radiogroup" aria-label="How hard is the job" data-task-toggle></div>
+    </div>
+    <div class="dial" role="radiogroup" aria-label="Effort level" id="dial"></div>
+    <p class="blurb" id="blurb" aria-live="polite"></p>
+    <div class="stage wide"><svg class="scene" id="stage-svg" role="img" aria-label="The agent working on the task"></svg></div>
+    <div class="strip strip-lg wide" id="close-strip" title="Drag to scrub"></div>
+    <div class="close-foot wide">
+      <div class="hud" id="close-hud"></div>
+      <div class="close-btns">
+        <button class="btn" type="button" id="close-play">Pause</button>
+        <button class="btn" type="button" id="close-replay">Replay</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="lesson" aria-labelledby="lesson-h">
+    <h2 id="lesson-h">Pick the lowest effort that gets it right</h2>
+    <div class="matrix" id="matrix"></div>
+    <p class="tip" id="model-tip" aria-live="polite"></p>
+    <p class="note">Outlined: the lowest effort that gets it right. Tagged: <span data-model-name>Opus 5.5</span>’s default.
+      On easy jobs, extra effort doesn’t just take longer. It can add things nobody asked for (<span class="xtra" data-extra-icon></span>).</p>
+  </section>
+
+  <section class="picks" aria-labelledby="picks-h">
+    <h2 id="picks-h">Pick for the job</h2>
+    <ul class="pick-list" id="picks"></ul>
+    <p class="note">Cost per step: Sonnet $, Opus $$, Fable $$$$$. Outlined: the model you picked.</p>
+    <p class="kicker">Effort isn’t how smart it is.<br>It’s how hard it tries.</p>
+  </section>
+</main>
+
+<footer class="foot">An illustration, not a benchmark. Model differences paraphrase Anthropic’s guidance for each model. Real tasks vary. <a href="../">More lessons</a></footer>
+
+<script src="app.js"></script>
+</body>
+</html>

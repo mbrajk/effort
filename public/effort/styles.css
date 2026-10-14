@@ -370,6 +370,7 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
   letter-spacing: -.03em;
 }
 .foot { max-width: 1120px; margin: 0 auto; padding: 56px 24px 40px; color: var(--muted); font-size: 15px; }
+.foot a { color: inherit; }
 
 /* ---------- scene artwork (SVG classes) ---------- */
 .s-ground { fill: var(--ground); }
