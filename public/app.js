@@ -828,7 +828,7 @@
     bad: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
   };
   document.querySelectorAll('[data-extra-icon]').forEach(e => { e.innerHTML = ICON.extra; });
-  const meterHTML = idx => '<span class="meter" aria-hidden="true">' +
+  const meterHTML = idx => `<span class="meter" aria-hidden="true" style="--lv:var(--lv${idx})">` +
     [0, 1, 2, 3, 4].map(i => `<b class="${i <= idx ? 'on' : ''}"></b>`).join('') + '</span>';
 
   // ---------------------------------------------------------------------------

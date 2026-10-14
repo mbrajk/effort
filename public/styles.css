@@ -34,6 +34,8 @@
   --idle: #c4bfd8;
   --extra: #e0449a;
   --wait: #6b6889;
+  --lv0: #2fae6a; --lv1: #8bbd3c; --lv2: #f2b52b; --lv3: #f08a3c; --lv4: #e4685a;
+  --cost: #3d8f62; --cost-on: #8fe0b0;
 
   --radius-lg: 22px;
   --radius-sm: 10px;
@@ -72,6 +74,8 @@
     --idle: #4a4769;
     --extra: #f472b6;
     --wait: #8f8bb3;
+    --lv0: #43c97f; --lv1: #a3d25a; --lv2: #f7c548; --lv3: #f7a05a; --lv4: #f47f72;
+    --cost: #6fd19b; --cost-on: #2c7a50;
     color-scheme: dark;
   }
 }
@@ -82,6 +86,8 @@
   --crate-lid: #cc9c63; --crate-in: #2e2113; --frame: #8d7fc4; --leg: #5b5288; --hole: #12112a;
   --think: #a383ff; --look: #4aa3f5; --do: #f6ab32; --check: #34c07f; --bad: #f2605f; --idle: #4a4769;
   --extra: #f472b6; --wait: #8f8bb3;
+  --lv0: #43c97f; --lv1: #a3d25a; --lv2: #f7c548; --lv3: #f7a05a; --lv4: #f47f72;
+  --cost: #6fd19b; --cost-on: #2c7a50;
   color-scheme: dark;
 }
 
@@ -218,7 +224,7 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .meter b { width: 5px; border-radius: 2px; background: var(--dim); }
 .meter b:nth-child(1) { height: 6px; } .meter b:nth-child(2) { height: 8px; } .meter b:nth-child(3) { height: 10px; }
 .meter b:nth-child(4) { height: 12px; } .meter b:nth-child(5) { height: 14px; }
-.meter b.on { background: var(--bulb); }
+.meter b.on { background: var(--lv, var(--bulb)); }
 .lane-main { display: grid; gap: 6px; min-width: 0; }
 .scene { display: block; width: 100%; height: auto; overflow: hidden; }
 .lane .scene { border-radius: 12px; }
@@ -312,7 +318,8 @@ button:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; }
 .xtra { flex: none; display: inline-flex; gap: 2px; vertical-align: -3px; }
 .xtra svg { width: 16px; height: 16px; }
 /* ---------- pick for the job ---------- */
-.cost { margin-left: 6px; font-size: .78em; font-weight: 700; letter-spacing: -.02em; opacity: .55; }
+.cost { margin-left: 6px; font-size: .78em; font-weight: 700; letter-spacing: -.02em; color: var(--cost); }
+.seg button[aria-checked="true"] .cost { color: var(--cost-on); }
 .pick-list { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 8px; max-width: 860px; }
 .pick details { background: var(--surface); border: 2px solid transparent; border-radius: 12px; transition: border-color .2s; }
 .pick.is-model details { border-color: var(--ink); }
